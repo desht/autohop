@@ -74,6 +74,10 @@ public class AutoHop extends JavaPlugin implements Listener {
 		passable.add(Material.WATER_LILY.getId());
 		passable.add(Material.NETHER_WARTS.getId());
 		passable.add(Material.ENDER_PORTAL.getId());
+		passable.add(Material.COBBLESTONE_STAIRS.getId());
+		passable.add(Material.WOOD_STAIRS.getId());
+		passable.add(Material.STEP.getId());
+		passable.add(126); // wood slab - Bukkit 1.3 should have this
 	}
 
 	@Override
@@ -89,6 +93,11 @@ public class AutoHop extends JavaPlugin implements Listener {
 
 	@EventHandler(ignoreCancelled = true)
 	public void onPlayerMove(PlayerMoveEvent event) {
+//		long s0 = System.nanoTime();
+		
+		if (!event.getPlayer().hasPermission("autohop.hop"))
+			return;
+		
 		Location f = event.getFrom();
 		Location t = event.getTo();
 
@@ -108,7 +117,6 @@ public class AutoHop extends JavaPlugin implements Listener {
 		float yaw = t.getYaw() % 360;
 		if (yaw < 0) yaw += 360;
 
-		Block toBlock = t.getBlock();
 		BlockFace face = null;
 		if (yaw >= 45 && yaw < 135 && dx <= 0.0 && tx < 0.3001) {
 			face = BlockFace.NORTH;
@@ -122,22 +130,23 @@ public class AutoHop extends JavaPlugin implements Listener {
 			return;
 		}
 
-		Block b = toBlock.getRelative(face);
+		Block b = t.getBlock().getRelative(face);
 		// System.out.println("check block " + face + " type = " + b.getType());
 
 		if (!passable.contains(b.getTypeId()) &&
 				passable.contains(b.getRelative(BlockFace.UP).getTypeId()) &&
 				passable.contains(b.getRelative(BlockFace.UP, 2).getTypeId())) {
-			Vector v = event.getPlayer().getVelocity();
-			System.out.println("current velocity = " + v + ", y pos = " + f.getY() + "->" + t.getY());
-			if (t.getY() % 1 < 0.0001 && !passable.contains(t.getBlock().getRelative(BlockFace.DOWN).getTypeId())) {
-				// System.out.println("block under " + t.getY() + " = " + event.getTo().getBlock().getRelative(BlockFace.DOWN).getType());
-//				System.out.println("jump!");
-				v.setX(v.getX() + dx);
-				v.setY(0.5);
-				v.setZ(v.getZ() + dz);
+			
+			// is player standing on solid ground?
+			if (f.getY() % 1 < 0.0001 && !passable.contains(f.getBlock().getRelative(BlockFace.DOWN).getTypeId())) {
+//				System.out.println("jump! " + event.getPlayer().getName());
+				Vector v = event.getPlayer().getVelocity();
+//				System.out.println("current velocity = " + v + ", y pos = " + f.getY() + "->" + t.getY());
+				v.setY(0.4);
 				event.getPlayer().setVelocity(v);
 			}
 		}
+		
+//		System.out.println("event handler: " + (System.nanoTime() - s0));
 	}
 }

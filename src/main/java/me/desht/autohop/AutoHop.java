@@ -103,7 +103,7 @@ public class AutoHop extends JavaPlugin implements Listener {
 		double tx = nextX - Math.floor(nextX);
 		double tz = nextZ - Math.floor(nextZ);
 
-//		System.out.println("yaw = " + t.getYaw() + " dx = " + dx + " dz = " + dz + " nextX = " + nextX + " tx = " + tx + " nextZ = " + nextZ + " tz = " + tz);
+		//		System.out.println("yaw = " + t.getYaw() + " dx = " + dx + " dz = " + dz + " nextX = " + nextX + " tx = " + tx + " nextZ = " + nextZ + " tz = " + tz);
 
 		float yaw = t.getYaw() % 360;
 		if (yaw < 0) yaw += 360;
@@ -123,15 +123,15 @@ public class AutoHop extends JavaPlugin implements Listener {
 		}
 
 		Block b = toBlock.getRelative(face);
-//		System.out.println("check block " + face + " type = " + b.getType());
+		// System.out.println("check block " + face + " type = " + b.getType());
 
 		if (!passable.contains(b.getTypeId()) &&
 				passable.contains(b.getRelative(BlockFace.UP).getTypeId()) &&
 				passable.contains(b.getRelative(BlockFace.UP, 2).getTypeId())) {
 			Vector v = event.getPlayer().getVelocity();
-//			System.out.println("current velocity = " + v);
-			
-			if (v.getY() <= 0.0 && v.getY() >= -0.08) {
+			System.out.println("current velocity = " + v + ", y pos = " + f.getY() + "->" + t.getY());
+			if (t.getY() % 1 < 0.0001 && !passable.contains(t.getBlock().getRelative(BlockFace.DOWN).getTypeId())) {
+				// System.out.println("block under " + t.getY() + " = " + event.getTo().getBlock().getRelative(BlockFace.DOWN).getType());
 //				System.out.println("jump!");
 				v.setX(v.getX() + dx);
 				v.setY(0.5);

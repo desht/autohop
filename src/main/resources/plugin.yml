@@ -1,0 +1,10 @@
+name: AutoHop
+main: me.desht.autohop.AutoHop
+author: desht
+website: http://dev.bukkit.org/server-mods/autohop
+version: 1.0
+description: Automatically jump up slopes, one-block-high walls etc.
+permissions:
+  autohop.hop:
+    description: Allows players to auto-hop
+    default: true

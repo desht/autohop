@@ -114,7 +114,7 @@ public class AutoHop extends JavaPlugin implements Listener {
 			face = BlockFace.NORTH;
 		} else if (yaw >= 135 && yaw < 225 && dz <= 0.0 && tz < 0.3001) {
 			face = BlockFace.EAST;
-		} else if (yaw >= 225 && yaw < 315 && dx >= 0.0 && tz > 0.6999) {
+		} else if (yaw >= 225 && yaw < 315 && dx >= 0.0 && tx > 0.6999) {
 			face = BlockFace.SOUTH;
 		} else if ((yaw >= 315 || yaw < 45) && dz >= 0.0 && tz > 0.6999) {
 			face = BlockFace.WEST;

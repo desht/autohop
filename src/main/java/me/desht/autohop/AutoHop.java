@@ -17,8 +17,10 @@ package me.desht.autohop;
     along with AutoHop.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -88,6 +90,13 @@ public class AutoHop extends JavaPlugin implements Listener {
 		PluginManager pm = this.getServer().getPluginManager();
 
 		pm.registerEvents(this, this);
+		
+		try {
+			MetricsLite metrics = new MetricsLite(this);
+			metrics.start();
+		} catch (IOException e) {
+			this.getLogger().log(Level.WARNING, "Couldn't submit metrics stats: " + e.getMessage());
+		}
 	}
 
 	@EventHandler(ignoreCancelled = true)

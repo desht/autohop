@@ -27,6 +27,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.material.Stairs;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
@@ -74,8 +75,6 @@ public class AutoHop extends JavaPlugin implements Listener {
 		passable.add(Material.WATER_LILY.getId());
 		passable.add(Material.NETHER_WARTS.getId());
 		passable.add(Material.ENDER_PORTAL.getId());
-		passable.add(Material.COBBLESTONE_STAIRS.getId());
-		passable.add(Material.WOOD_STAIRS.getId());
 		passable.add(Material.STEP.getId());
 		passable.add(126); // wood slab - Bukkit 1.3 should have this
 	}
@@ -93,28 +92,28 @@ public class AutoHop extends JavaPlugin implements Listener {
 
 	@EventHandler(ignoreCancelled = true)
 	public void onPlayerMove(PlayerMoveEvent event) {
-//		long s0 = System.nanoTime();
-		
+		//		long s0 = System.nanoTime();
+
 		if (!event.getPlayer().hasPermission("autohop.hop"))
 			return;
-		
-		Location f = event.getFrom();
-		Location t = event.getTo();
+
+		Location from = event.getFrom();
+		Location to = event.getTo();
 
 		// delta X and Z - which way the player is going
-		double dx = t.getX() - f.getX();
-		double dz = t.getZ() - f.getZ();
+		double dx = to.getX() - from.getX();
+		double dz = to.getZ() - from.getZ();
 		// extrapolation of next X and Z the player will get to
-		double nextX = t.getX() + dx;
-		double nextZ = t.getZ() + dz;
+		double nextX = to.getX() + dx;
+		double nextZ = to.getZ() + dz;
 		// X and Z position within a block - a player pushing against a wall will 
 		// have X or Z either < ~0.3 or > ~0.7 due to player entity bounding box size
 		double tx = nextX - Math.floor(nextX);
 		double tz = nextZ - Math.floor(nextZ);
 
-		//		System.out.println("yaw = " + t.getYaw() + " dx = " + dx + " dz = " + dz + " nextX = " + nextX + " tx = " + tx + " nextZ = " + nextZ + " tz = " + tz);
+		// System.out.println("yaw = " + t.getYaw() + " dx = " + dx + " dz = " + dz + " nextX = " + nextX + " tx = " + tx + " nextZ = " + nextZ + " tz = " + tz);
 
-		float yaw = t.getYaw() % 360;
+		float yaw = to.getYaw() % 360;
 		if (yaw < 0) yaw += 360;
 
 		BlockFace face = null;
@@ -130,23 +129,36 @@ public class AutoHop extends JavaPlugin implements Listener {
 			return;
 		}
 
-		Block b = t.getBlock().getRelative(face);
+		// the block we're trying to move into
+		Block b = to.getBlock().getRelative(face);
 		// System.out.println("check block " + face + " type = " + b.getType());
 
-		if (!passable.contains(b.getTypeId()) &&
-				passable.contains(b.getRelative(BlockFace.UP).getTypeId()) &&
-				passable.contains(b.getRelative(BlockFace.UP, 2).getTypeId())) {
-			
-			// is player standing on solid ground?
-			if (f.getY() % 1 < 0.0001 && !passable.contains(f.getBlock().getRelative(BlockFace.DOWN).getTypeId())) {
-//				System.out.println("jump! " + event.getPlayer().getName());
-				Vector v = event.getPlayer().getVelocity();
-//				System.out.println("current velocity = " + v + ", y pos = " + f.getY() + "->" + t.getY());
-				v.setY(0.4);
-				event.getPlayer().setVelocity(v);
+		boolean climbable = false;
+		if (isStairs(b.getTypeId())) {
+			Stairs s = (Stairs)b.getState().getData();
+			climbable = s.getAscendingDirection() == face;
+			// System.out.println("see some stairs: climbable = " + climbable);
+		}
+
+		if (!climbable && !passable.contains(b.getTypeId())) {
+			int id1 = b.getRelative(BlockFace.UP).getTypeId();
+			int id2 = b.getRelative(BlockFace.UP, 2).getTypeId();
+			if (passable.contains(id1) && passable.contains(id2)) {
+				// is player standing on solid ground or on (including partway up) some stairs?
+				if (from.getY() % 1 < 0.0001 && !passable.contains(from.getBlock().getRelative(BlockFace.DOWN).getTypeId())
+						|| isStairs(from.getBlock().getTypeId())) {
+					Vector v = event.getPlayer().getVelocity();
+					//				System.out.println("current velocity = " + v + ", y pos = " + f.getY() + "->" + t.getY());
+					v.setY(0.4);
+					event.getPlayer().setVelocity(v);
+				}
 			}
 		}
-		
-//		System.out.println("event handler: " + (System.nanoTime() - s0));
+
+		// System.out.println("event handler: " + (System.nanoTime() - s0));
+	}
+	
+	private boolean isStairs(int id) {
+		return id == Material.COBBLESTONE_STAIRS.getId() || id == Material.WOOD_STAIRS.getId();
 	}
 }

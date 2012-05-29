@@ -77,8 +77,6 @@ public class AutoHop extends JavaPlugin implements Listener {
 		passable.add(Material.WATER_LILY.getId());
 		passable.add(Material.NETHER_WARTS.getId());
 		passable.add(Material.ENDER_PORTAL.getId());
-		passable.add(Material.STEP.getId());
-		passable.add(126); // wood slab - Bukkit 1.3 should have this
 	}
 
 	@Override
@@ -147,17 +145,28 @@ public class AutoHop extends JavaPlugin implements Listener {
 			Stairs s = (Stairs)b.getState().getData();
 			climbable = s.getAscendingDirection() == face;
 			// System.out.println("see some stairs: climbable = " + climbable);
+		} else if (isSlab(b.getTypeId())) {
+			climbable = true;
 		}
 
 		if (!climbable && !passable.contains(b.getTypeId())) {
+			// trying to move into a non-passable or climbable block
+			// see if we're able to jump onto it
+			
 			int id1 = b.getRelative(BlockFace.UP).getTypeId();
 			int id2 = b.getRelative(BlockFace.UP, 2).getTypeId();
-			if (passable.contains(id1) && passable.contains(id2)) {
-				// is player standing on solid ground or on (including partway up) some stairs?
+			
+			// ensure there's room above the block we want to jump on
+			// if there's a slab on that block, we can still jump, iff we're already on a slab
+			if ((passable.contains(id1) || isSlab(id1) && standingOnSlab(from)) && passable.contains(id2)) {
+				
+				// is player standing on solid ground or on (including partway up) some stairs or a slab?
 				if (from.getY() % 1 < 0.0001 && !passable.contains(from.getBlock().getRelative(BlockFace.DOWN).getTypeId())
-						|| isStairs(from.getBlock().getTypeId())) {
+						|| isStairs(from.getBlock().getTypeId())
+						|| standingOnSlab(from)) {
+					
 					Vector v = event.getPlayer().getVelocity();
-					//				System.out.println("current velocity = " + v + ", y pos = " + f.getY() + "->" + t.getY());
+					// System.out.println("current velocity = " + v + ", y pos = " + f.getY() + "->" + t.getY());
 					v.setY(0.4);
 					event.getPlayer().setVelocity(v);
 				}
@@ -169,5 +178,13 @@ public class AutoHop extends JavaPlugin implements Listener {
 	
 	private boolean isStairs(int id) {
 		return id == Material.COBBLESTONE_STAIRS.getId() || id == Material.WOOD_STAIRS.getId();
+	}
+	
+	private boolean isSlab(int id) {
+		return id == Material.STEP.getId() || id == 126; // 126 = MC 1.3 wood slab
+	}
+	
+	private boolean standingOnSlab(Location l) {
+		return isSlab(l.getBlock().getTypeId()) && l.getY() % 1 <= 0.51;
 	}
 }

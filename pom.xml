@@ -4,7 +4,7 @@
 	<groupId>me.desht</groupId>
 	<artifactId>autohop</artifactId>
 	<packaging>jar</packaging>
-	<version>1.1</version>
+	<version>1.2</version>
 	<name>AutoHop</name>
 	<url>http://maven.apache.org</url>
 	<properties>

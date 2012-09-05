@@ -77,6 +77,10 @@ public class AutoHop extends JavaPlugin implements Listener {
 		passable.add(Material.WATER_LILY.getId());
 		passable.add(Material.NETHER_WARTS.getId());
 		passable.add(Material.ENDER_PORTAL.getId());
+		passable.add(Material.TRIPWIRE.getId());
+		passable.add(Material.TRIPWIRE_HOOK.getId());
+		// yeah, fences aren't passable, but this prevents players attempting to jump them at all
+		passable.add(Material.FENCE.getId());
 	}
 
 	@Override
@@ -167,7 +171,7 @@ public class AutoHop extends JavaPlugin implements Listener {
 					
 					Vector v = event.getPlayer().getVelocity();
 					// System.out.println("current velocity = " + v + ", y pos = " + f.getY() + "->" + t.getY());
-					v.setY(0.4);
+					v.setY(0.37);
 					event.getPlayer().setVelocity(v);
 				}
 			}
@@ -181,7 +185,7 @@ public class AutoHop extends JavaPlugin implements Listener {
 	}
 	
 	private boolean isSlab(int id) {
-		return id == Material.STEP.getId() || id == 126; // 126 = MC 1.3 wood slab
+		return id == Material.STEP.getId() || id == Material.WOOD_STEP.getId();
 	}
 	
 	private boolean standingOnSlab(Location l) {

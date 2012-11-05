@@ -79,8 +79,13 @@ public class AutoHop extends JavaPlugin implements Listener {
 		passable.add(Material.ENDER_PORTAL.getId());
 		passable.add(Material.TRIPWIRE.getId());
 		passable.add(Material.TRIPWIRE_HOOK.getId());
-		// yeah, fences aren't passable, but this prevents players attempting to jump them at all
+		passable.add(Material.CARROT.getId());
+		passable.add(Material.POTATO.getId());
+		passable.add(Material.FLOWER_POT.getId());
+		passable.add(Material.SKULL.getId());
+		// yeah, fences/cobble-walls aren't passable, but this prevents players attempting to jump them at all
 		passable.add(Material.FENCE.getId());
+		passable.add(Material.COBBLE_WALL.getId());
 	}
 
 	@Override
@@ -145,7 +150,7 @@ public class AutoHop extends JavaPlugin implements Listener {
 		// System.out.println("check block " + face + " type = " + b.getType());
 
 		boolean climbable = false;
-		if (isStairs(b.getTypeId())) {
+		if (isStairs(b.getType())) {
 			Stairs s = (Stairs)b.getState().getData();
 			climbable = s.getAscendingDirection() == face;
 			// System.out.println("see some stairs: climbable = " + climbable);
@@ -166,7 +171,7 @@ public class AutoHop extends JavaPlugin implements Listener {
 				
 				// is player standing on solid ground or on (including partway up) some stairs or a slab?
 				if (from.getY() % 1 < 0.0001 && !passable.contains(from.getBlock().getRelative(BlockFace.DOWN).getTypeId())
-						|| isStairs(from.getBlock().getTypeId())
+						|| isStairs(from.getBlock().getType())
 						|| standingOnSlab(from)) {
 					
 					Vector v = event.getPlayer().getVelocity();
@@ -180,8 +185,18 @@ public class AutoHop extends JavaPlugin implements Listener {
 		// System.out.println("event handler: " + (System.nanoTime() - s0));
 	}
 	
-	private boolean isStairs(int id) {
-		return id == Material.COBBLESTONE_STAIRS.getId() || id == Material.WOOD_STAIRS.getId();
+	private boolean isStairs(Material mat) {
+		switch (mat) {
+		case COBBLESTONE_STAIRS:
+		case SANDSTONE_STAIRS:
+		case WOOD_STAIRS:
+		case BIRCH_WOOD_STAIRS:
+		case JUNGLE_WOOD_STAIRS:
+		case SPRUCE_WOOD_STAIRS:
+			return true;
+		default:
+			return false;
+		}
 	}
 	
 	private boolean isSlab(int id) {

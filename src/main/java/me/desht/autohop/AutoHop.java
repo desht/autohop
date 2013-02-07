@@ -127,27 +127,27 @@ public class AutoHop extends JavaPlugin implements Listener {
 		double tx = nextX - Math.floor(nextX);
 		double tz = nextZ - Math.floor(nextZ);
 
-		// System.out.println("yaw = " + t.getYaw() + " dx = " + dx + " dz = " + dz + " nextX = " + nextX + " tx = " + tx + " nextZ = " + nextZ + " tz = " + tz);
+//		 System.out.println("yaw = " + to.getYaw() + " dx = " + dx + " dz = " + dz + " nextX = " + nextX + " tx = " + tx + " nextZ = " + nextZ + " tz = " + tz);
 
 		float yaw = to.getYaw() % 360;
 		if (yaw < 0) yaw += 360;
 
 		BlockFace face = null;
 		if (yaw >= 45 && yaw < 135 && dx <= 0.0 && tx < 0.3001) {
-			face = BlockFace.NORTH;
-		} else if (yaw >= 135 && yaw < 225 && dz <= 0.0 && tz < 0.3001) {
-			face = BlockFace.EAST;
-		} else if (yaw >= 225 && yaw < 315 && dx >= 0.0 && tx > 0.6999) {
-			face = BlockFace.SOUTH;
-		} else if ((yaw >= 315 || yaw < 45) && dz >= 0.0 && tz > 0.6999) {
 			face = BlockFace.WEST;
+		} else if (yaw >= 135 && yaw < 225 && dz <= 0.0 && tz < 0.3001) {
+			face = BlockFace.NORTH;
+		} else if (yaw >= 225 && yaw < 315 && dx >= 0.0 && tx > 0.6999) {
+			face = BlockFace.EAST;
+		} else if ((yaw >= 315 || yaw < 45) && dz >= 0.0 && tz > 0.6999) {
+			face = BlockFace.SOUTH;
 		} else {
 			return;
 		}
 
 		// the block we're trying to move into
 		Block b = to.getBlock().getRelative(face);
-		// System.out.println("check block " + face + " type = " + b.getType());
+//		 System.out.println("check block " + face + " type = " + b.getType());
 
 		boolean climbable = false;
 		if (isStairs(b.getType())) {
@@ -175,7 +175,7 @@ public class AutoHop extends JavaPlugin implements Listener {
 						|| standingOnSlab(from)) {
 					
 					Vector v = event.getPlayer().getVelocity();
-					// System.out.println("current velocity = " + v + ", y pos = " + f.getY() + "->" + t.getY());
+//					 System.out.println("current velocity = " + v + ", y pos = " + from.getY() + "->" + to.getY());
 					v.setY(0.37);
 					event.getPlayer().setVelocity(v);
 				}

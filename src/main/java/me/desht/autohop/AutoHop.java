@@ -38,6 +38,11 @@ public class AutoHop extends JavaPlugin implements Listener {
 
 	private static Set<Integer> passable = new HashSet<Integer>();
 
+	private static BlockFace NORTH = BlockFace.NORTH;
+	private static BlockFace EAST = BlockFace.EAST;
+	private static BlockFace SOUTH = BlockFace.SOUTH;
+	private static BlockFace WEST = BlockFace.WEST;
+
 	static {
 		passable.add(Material.AIR.getId());
 		passable.add(Material.WATER.getId());
@@ -91,12 +96,21 @@ public class AutoHop extends JavaPlugin implements Listener {
 	@Override
 	public void onDisable() {
 	}
-
+	
 	@Override
 	public void onEnable() { 
 		PluginManager pm = this.getServer().getPluginManager();
 
 		pm.registerEvents(this, this);
+		
+		if (BlockFace.NORTH.getModX() == -1) {
+			// legacy support - breaking BlockFace change as of Dec 4th 2012
+			// https://github.com/Bukkit/Bukkit/commit/e468a8b391336f292d3642ffa4c45b4600e91b64
+			NORTH = BlockFace.EAST;
+			EAST = BlockFace.SOUTH;
+			SOUTH = BlockFace.WEST;
+			WEST = BlockFace.NORTH;
+		}
 		
 		try {
 			MetricsLite metrics = new MetricsLite(this);
@@ -134,13 +148,13 @@ public class AutoHop extends JavaPlugin implements Listener {
 
 		BlockFace face = null;
 		if (yaw >= 45 && yaw < 135 && dx <= 0.0 && tx < 0.3001) {
-			face = BlockFace.WEST;
+			face = WEST;
 		} else if (yaw >= 135 && yaw < 225 && dz <= 0.0 && tz < 0.3001) {
-			face = BlockFace.NORTH;
+			face = NORTH;
 		} else if (yaw >= 225 && yaw < 315 && dx >= 0.0 && tx > 0.6999) {
-			face = BlockFace.EAST;
+			face = EAST;
 		} else if ((yaw >= 315 || yaw < 45) && dz >= 0.0 && tz > 0.6999) {
-			face = BlockFace.SOUTH;
+			face = SOUTH;
 		} else {
 			return;
 		}

@@ -18,25 +18,38 @@ package me.desht.autohop;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.material.Stairs;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.Vector;
+import org.bukkit.scheduler.BukkitTask;
+import org.mcstats.MetricsLite;
 
 public class AutoHop extends JavaPlugin implements Listener {
 
-	private static Set<Integer> passable = new HashSet<Integer>();
+	private final Set<String> noHoppers = new HashSet<String>();
+
+	private static final Set<Integer> passableBlocks = new HashSet<Integer>();
+	private static final Set<Integer> stairBlocks = new HashSet<Integer>();
+
+	private BukkitTask saveTask = null;
 
 	private static BlockFace NORTH = BlockFace.NORTH;
 	private static BlockFace EAST = BlockFace.EAST;
@@ -44,65 +57,76 @@ public class AutoHop extends JavaPlugin implements Listener {
 	private static BlockFace WEST = BlockFace.WEST;
 
 	static {
-		passable.add(Material.AIR.getId());
-		passable.add(Material.WATER.getId());
-		passable.add(Material.STATIONARY_WATER.getId());
-		passable.add(Material.SAPLING.getId());
-		passable.add(Material.POWERED_RAIL.getId());
-		passable.add(Material.DETECTOR_RAIL.getId());
-		passable.add(Material.WEB.getId());
-		passable.add(Material.LONG_GRASS.getId());
-		passable.add(Material.DEAD_BUSH.getId());
-		passable.add(Material.YELLOW_FLOWER.getId());
-		passable.add(Material.RED_ROSE.getId());
-		passable.add(Material.BROWN_MUSHROOM.getId());
-		passable.add(Material.RED_MUSHROOM.getId());
-		passable.add(Material.TORCH.getId());
-		passable.add(Material.FIRE.getId());
-		passable.add(Material.REDSTONE_WIRE.getId());
-		passable.add(Material.CROPS.getId());
-		passable.add(Material.SIGN_POST.getId());
-		passable.add(Material.LADDER.getId());
-		passable.add(Material.RAILS.getId());
-		passable.add(Material.WALL_SIGN.getId());
-		passable.add(Material.LEVER.getId());
-		passable.add(Material.STONE_PLATE.getId());
-		passable.add(Material.WOOD_PLATE.getId());
-		passable.add(Material.REDSTONE_TORCH_OFF.getId());
-		passable.add(Material.REDSTONE_TORCH_ON.getId());
-		passable.add(Material.STONE_BUTTON.getId());
-		passable.add(Material.SNOW.getId());
-		passable.add(Material.SUGAR_CANE.getId());
-		passable.add(Material.PORTAL.getId());
-		passable.add(Material.DIODE_BLOCK_OFF.getId());
-		passable.add(Material.DIODE_BLOCK_ON.getId());
-		passable.add(Material.PUMPKIN_STEM.getId());
-		passable.add(Material.MELON_STEM.getId());
-		passable.add(Material.VINE.getId());
-		passable.add(Material.WATER_LILY.getId());
-		passable.add(Material.NETHER_WARTS.getId());
-		passable.add(Material.ENDER_PORTAL.getId());
-		passable.add(Material.TRIPWIRE.getId());
-		passable.add(Material.TRIPWIRE_HOOK.getId());
-		passable.add(Material.CARROT.getId());
-		passable.add(Material.POTATO.getId());
-		passable.add(Material.FLOWER_POT.getId());
-		passable.add(Material.SKULL.getId());
+		passableBlocks.add(Material.AIR.getId());
+		passableBlocks.add(Material.WATER.getId());
+		passableBlocks.add(Material.STATIONARY_WATER.getId());
+		passableBlocks.add(Material.SAPLING.getId());
+		passableBlocks.add(Material.POWERED_RAIL.getId());
+		passableBlocks.add(Material.DETECTOR_RAIL.getId());
+		passableBlocks.add(Material.WEB.getId());
+		passableBlocks.add(Material.LONG_GRASS.getId());
+		passableBlocks.add(Material.DEAD_BUSH.getId());
+		passableBlocks.add(Material.YELLOW_FLOWER.getId());
+		passableBlocks.add(Material.RED_ROSE.getId());
+		passableBlocks.add(Material.BROWN_MUSHROOM.getId());
+		passableBlocks.add(Material.RED_MUSHROOM.getId());
+		passableBlocks.add(Material.TORCH.getId());
+		passableBlocks.add(Material.FIRE.getId());
+		passableBlocks.add(Material.REDSTONE_WIRE.getId());
+		passableBlocks.add(Material.CROPS.getId());
+		passableBlocks.add(Material.SIGN_POST.getId());
+		passableBlocks.add(Material.LADDER.getId());
+		passableBlocks.add(Material.RAILS.getId());
+		passableBlocks.add(Material.WALL_SIGN.getId());
+		passableBlocks.add(Material.LEVER.getId());
+		passableBlocks.add(Material.STONE_PLATE.getId());
+		passableBlocks.add(Material.WOOD_PLATE.getId());
+		passableBlocks.add(Material.REDSTONE_TORCH_OFF.getId());
+		passableBlocks.add(Material.REDSTONE_TORCH_ON.getId());
+		passableBlocks.add(Material.STONE_BUTTON.getId());
+		passableBlocks.add(Material.SNOW.getId());
+		passableBlocks.add(Material.SUGAR_CANE.getId());
+		passableBlocks.add(Material.PORTAL.getId());
+		passableBlocks.add(Material.DIODE_BLOCK_OFF.getId());
+		passableBlocks.add(Material.DIODE_BLOCK_ON.getId());
+		passableBlocks.add(Material.PUMPKIN_STEM.getId());
+		passableBlocks.add(Material.MELON_STEM.getId());
+		passableBlocks.add(Material.VINE.getId());
+		passableBlocks.add(Material.WATER_LILY.getId());
+		passableBlocks.add(Material.NETHER_WARTS.getId());
+		passableBlocks.add(Material.ENDER_PORTAL.getId());
+		passableBlocks.add(Material.TRIPWIRE.getId());
+		passableBlocks.add(Material.TRIPWIRE_HOOK.getId());
+		passableBlocks.add(Material.CARROT.getId());
+		passableBlocks.add(Material.POTATO.getId());
+		passableBlocks.add(Material.FLOWER_POT.getId());
+		passableBlocks.add(Material.SKULL.getId());
+		passableBlocks.add(Material.GOLD_PLATE.getId());
+		passableBlocks.add(Material.IRON_PLATE.getId());
+		passableBlocks.add(Material.DAYLIGHT_DETECTOR.getId());
+		passableBlocks.add(171); // carpet - MC 1.6
 		// yeah, fences/cobble-walls aren't passable, but this prevents players attempting to jump them at all
-		passable.add(Material.FENCE.getId());
-		passable.add(Material.COBBLE_WALL.getId());
+		passableBlocks.add(Material.FENCE.getId());
+		passableBlocks.add(Material.COBBLE_WALL.getId());
+
+		for (Material m : Material.values()) {
+			if (m.toString().endsWith("_STAIRS")) {
+				stairBlocks.add(m.getId());
+			}
+		}
 	}
 
 	@Override
 	public void onDisable() {
+		saveConf();
 	}
-	
+
 	@Override
-	public void onEnable() { 
+	public void onEnable() {
 		PluginManager pm = this.getServer().getPluginManager();
 
 		pm.registerEvents(this, this);
-		
+
 		if (BlockFace.NORTH.getModX() == -1) {
 			// legacy support - breaking BlockFace change as of Dec 4th 2012
 			// https://github.com/Bukkit/Bukkit/commit/e468a8b391336f292d3642ffa4c45b4600e91b64
@@ -111,12 +135,47 @@ public class AutoHop extends JavaPlugin implements Listener {
 			SOUTH = BlockFace.WEST;
 			WEST = BlockFace.NORTH;
 		}
-		
+
 		try {
 			MetricsLite metrics = new MetricsLite(this);
 			metrics.start();
 		} catch (IOException e) {
 			this.getLogger().log(Level.WARNING, "Couldn't submit metrics stats: " + e.getMessage());
+		}
+
+		if (getConfig().contains("nohop")) {
+			for (String s : getConfig().getStringList("nohop")) {
+				noHoppers.add(s);
+			}
+		}
+	}
+
+	@Override
+	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+		if (command.getName().equals("ahop")) {
+			if (sender instanceof Player) {
+				String name = sender.getName();
+				if (noHoppers.contains(name)) {
+					sender.sendMessage(ChatColor.YELLOW + "Autohop ENABLED!");
+					noHoppers.remove(name);
+				} else {
+					sender.sendMessage(ChatColor.YELLOW + "Autohop DISABLED!");
+					noHoppers.add(name);
+				}
+				if (saveTask == null) {
+					saveTask = Bukkit.getScheduler().runTaskLater(this, new Runnable() {
+						@Override
+						public void run() {
+							saveConf();
+						}
+					}, 1200L);
+				}
+			} else {
+				sender.sendMessage(ChatColor.RED + "This command can't be used from the console.");
+			}
+			return true;
+		} else {
+			return false;
 		}
 	}
 
@@ -124,8 +183,9 @@ public class AutoHop extends JavaPlugin implements Listener {
 	public void onPlayerMove(PlayerMoveEvent event) {
 		//		long s0 = System.nanoTime();
 
-		if (!event.getPlayer().hasPermission("autohop.hop"))
+		if (!event.getPlayer().hasPermission("autohop.hop") || noHoppers.contains(event.getPlayer().getName())) {
 			return;
+		}
 
 		Location from = event.getFrom();
 		Location to = event.getTo();
@@ -141,7 +201,7 @@ public class AutoHop extends JavaPlugin implements Listener {
 		double tx = nextX - Math.floor(nextX);
 		double tz = nextZ - Math.floor(nextZ);
 
-//		 System.out.println("yaw = " + to.getYaw() + " dx = " + dx + " dz = " + dz + " nextX = " + nextX + " tx = " + tx + " nextZ = " + nextZ + " tz = " + tz);
+		//		 System.out.println("yaw = " + to.getYaw() + " dx = " + dx + " dz = " + dz + " nextX = " + nextX + " tx = " + tx + " nextZ = " + nextZ + " tz = " + tz);
 
 		float yaw = to.getYaw() % 360;
 		if (yaw < 0) yaw += 360;
@@ -161,63 +221,54 @@ public class AutoHop extends JavaPlugin implements Listener {
 
 		// the block we're trying to move into
 		Block b = to.getBlock().getRelative(face);
-//		 System.out.println("check block " + face + " type = " + b.getType());
+		//		 System.out.println("check block " + face + " type = " + b.getType());
 
 		boolean climbable = false;
-		if (isStairs(b.getType())) {
+		if (stairBlocks.contains(b.getTypeId())) {
 			Stairs s = (Stairs)b.getState().getData();
 			climbable = s.getAscendingDirection() == face;
 			// System.out.println("see some stairs: climbable = " + climbable);
-		} else if (isSlab(b.getTypeId())) {
+		} else if (isSlab(b)) {
 			climbable = true;
 		}
 
-		if (!climbable && !passable.contains(b.getTypeId())) {
+		if (!climbable && !passableBlocks.contains(b.getTypeId())) {
 			// trying to move into a non-passable or climbable block
 			// see if we're able to jump onto it
-			
-			int id1 = b.getRelative(BlockFace.UP).getTypeId();
-			int id2 = b.getRelative(BlockFace.UP, 2).getTypeId();
-			
+			Block above = b.getRelative(BlockFace.UP);
+			Block above2 = b.getRelative(BlockFace.UP, 2);
+
 			// ensure there's room above the block we want to jump on
 			// if there's a slab on that block, we can still jump, iff we're already on a slab
-			if ((passable.contains(id1) || isSlab(id1) && standingOnSlab(from)) && passable.contains(id2)) {
-				
+			if ((passableBlocks.contains(above.getTypeId()) || isSlab(above) && standingOnSlab(from)) && passableBlocks.contains(above2.getTypeId())) {
 				// is player standing on solid ground or on (including partway up) some stairs or a slab?
-				if (from.getY() % 1 < 0.0001 && !passable.contains(from.getBlock().getRelative(BlockFace.DOWN).getTypeId())
-						|| isStairs(from.getBlock().getType())
-						|| standingOnSlab(from)) {
-					
-					Vector v = event.getPlayer().getVelocity();
-//					 System.out.println("current velocity = " + v + ", y pos = " + from.getY() + "->" + to.getY());
-					v.setY(0.37);
-					event.getPlayer().setVelocity(v);
+				if (from.getY() % 1 < 0.0001 && !passableBlocks.contains(from.getBlock().getRelative(BlockFace.DOWN).getTypeId())
+						|| stairBlocks.contains(from.getBlock().getTypeId())
+						|| standingOnSlab(from)
+						|| from.getBlock().getType() == Material.SNOW) {
+					event.setTo(new Location(from.getWorld(), nextX, from.getY() + 1, nextZ, from.getYaw(), from.getPitch()));
 				}
 			}
 		}
 
 		// System.out.println("event handler: " + (System.nanoTime() - s0));
 	}
-	
-	private boolean isStairs(Material mat) {
-		switch (mat) {
-		case COBBLESTONE_STAIRS:
-		case SANDSTONE_STAIRS:
-		case WOOD_STAIRS:
-		case BIRCH_WOOD_STAIRS:
-		case JUNGLE_WOOD_STAIRS:
-		case SPRUCE_WOOD_STAIRS:
-			return true;
-		default:
-			return false;
-		}
+
+	private boolean isSlab(Block b) {
+		return b.getType() == Material.STEP || b.getType() == Material.WOOD_STEP || b.getType() == Material.SNOW && b.getData() >= 4;
 	}
-	
-	private boolean isSlab(int id) {
-		return id == Material.STEP.getId() || id == Material.WOOD_STEP.getId();
-	}
-	
+
 	private boolean standingOnSlab(Location l) {
-		return isSlab(l.getBlock().getTypeId()) && l.getY() % 1 <= 0.51;
+		return isSlab(l.getBlock()) && l.getY() % 1 <= 0.51;
+	}
+
+	private void saveConf() {
+		List<String> l = new ArrayList<String>();
+		for (String s : noHoppers) {
+			l.add(s);
+		}
+		getConfig().set("nohop", l);
+		saveConfig();
+		saveTask = null;
 	}
 }

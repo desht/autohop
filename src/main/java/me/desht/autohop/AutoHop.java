@@ -32,6 +32,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -232,34 +233,51 @@ public class AutoHop extends JavaPlugin implements Listener {
 			climbable = true;
 		}
 
-		if (!climbable && !passableBlocks.contains(b.getTypeId())) {
-			// trying to move into a non-passable or climbable block
-			// see if we're able to jump onto it
+		if (!climbable && !isPassable(b)) {
+			// trying to move into a non-passable or climbable block; see if we're able to jump onto it
 			Block above = b.getRelative(BlockFace.UP);
-			Block above2 = b.getRelative(BlockFace.UP, 2);
-
-			// ensure there's room above the block we want to jump on
-			// if there's a slab on that block, we can still jump, iff we're already on a slab
-			if ((passableBlocks.contains(above.getTypeId()) || isSlab(above) && standingOnSlab(from)) && passableBlocks.contains(above2.getTypeId())) {
-				// is player standing on solid ground or on (including partway up) some stairs or a slab?
-				if (from.getY() % 1 < 0.0001 && !passableBlocks.contains(from.getBlock().getRelative(BlockFace.DOWN).getTypeId())
-						|| stairBlocks.contains(from.getBlock().getTypeId())
-						|| standingOnSlab(from)
-						|| from.getBlock().getType() == Material.SNOW) {
-					event.setTo(new Location(from.getWorld(), nextX, from.getY() + 1, nextZ, from.getYaw(), from.getPitch()));
-				}
+			boolean onSlab = standingOnSlab(from);
+			if (isPassable(above) && ((Entity)event.getPlayer()).isOnGround() && !onSlab) {
+				event.setTo(new Location(from.getWorld(), nextX, from.getY() + 1, nextZ, from.getYaw(), from.getPitch()));
+			} else if (isSlab(above) && onSlab && isPassable(above.getRelative(BlockFace.UP))) {
+				event.setTo(new Location(from.getWorld(), nextX, above.getY() + getBlockThickness(above), nextZ, from.getYaw(), from.getPitch()));
 			}
 		}
 
 		// System.out.println("event handler: " + (System.nanoTime() - s0));
 	}
 
+	private double getBlockThickness(Block b) {
+		if (b.getType() == Material.SNOW && b.getData() >= 3) {
+			return b.getData() * 0.1250025;
+		} else if (isSlab(b)) {
+			return 0.5;
+		} else {
+			return 1.0;
+		}
+	}
+
+	private boolean isPassable(Block b) {
+		if (b.getType() == Material.SNOW) {
+			return b.getData() < 5;
+		} else {
+			return passableBlocks.contains(b.getTypeId());
+		}
+	}
+
 	private boolean isSlab(Block b) {
-		return b.getType() == Material.STEP || b.getType() == Material.WOOD_STEP || b.getType() == Material.SNOW && b.getData() >= 4;
+		return b.getType() == Material.STEP || b.getType() == Material.WOOD_STEP || b.getType() == Material.SNOW && (b.getData() == 3 || b.getData() == 4);
 	}
 
 	private boolean standingOnSlab(Location l) {
-		return isSlab(l.getBlock()) && l.getY() % 1 <= 0.51;
+		Block b = l.getBlock();
+		if (b.getType() == Material.SNOW && b.getData() >= 3) {
+			return l.getY() % 1 <= b.getData() * 0.1250025;
+		} else if (isSlab(b)) {
+			return l.getY() % 1 <= 0.501;
+		} else {
+			return false;
+		}
 	}
 
 	private void saveConf() {

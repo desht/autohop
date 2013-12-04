@@ -106,6 +106,7 @@ public class AutoHop extends JavaPlugin implements Listener {
 		passableBlocks.add(Material.IRON_PLATE);
 		passableBlocks.add(Material.DAYLIGHT_DETECTOR);
 		passableBlocks.add(Material.CARPET);
+		passableBlocks.add(Material.DOUBLE_PLANT);
 		// yeah, fences/cobble-walls aren't passable, but this prevents players attempting to jump them at all
 		passableBlocks.add(Material.FENCE);
 		passableBlocks.add(Material.COBBLE_WALL);
@@ -197,7 +198,7 @@ public class AutoHop extends JavaPlugin implements Listener {
 		// extrapolation of next X and Z the player will get to
 		double nextX = to.getX() + dx;
 		double nextZ = to.getZ() + dz;
-		// X and Z position within a block - a player pushing against a wall will 
+		// X and Z position within a block - a player pushing against a wall will
 		// have X or Z either < ~0.3 or > ~0.7 due to player entity bounding box size
 		double tx = nextX - Math.floor(nextX);
 		double tz = nextZ - Math.floor(nextZ);

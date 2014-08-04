@@ -18,10 +18,7 @@ package me.desht.autohop;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
@@ -36,6 +33,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.material.Stairs;
 import org.bukkit.plugin.PluginManager;
@@ -46,6 +44,7 @@ import org.mcstats.MetricsLite;
 public class AutoHop extends JavaPlugin implements Listener {
 
 	private final Set<String> noHoppers = new HashSet<String>();
+    private final Set<UUID> noHopperIDs = new HashSet<UUID>();
 
 	private static final Set<Material> passableBlocks = new HashSet<Material>();
 	private static final Set<Material> stairBlocks = new HashSet<Material>();
@@ -147,7 +146,11 @@ public class AutoHop extends JavaPlugin implements Listener {
 
 		if (getConfig().contains("nohop")) {
 			for (String s : getConfig().getStringList("nohop")) {
-				noHoppers.add(s);
+                if (s.length() == 36) {
+                    noHopperIDs.add(UUID.fromString(s));
+                } else {
+                    noHoppers.add(s);
+                }
 			}
 		}
 	}
@@ -156,22 +159,15 @@ public class AutoHop extends JavaPlugin implements Listener {
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 		if (command.getName().equals("ahop")) {
 			if (sender instanceof Player) {
-				String name = sender.getName();
-				if (noHoppers.contains(name)) {
+                UUID id = ((Player) sender).getUniqueId();
+				if (noHopperIDs.contains(id)) {
 					sender.sendMessage(ChatColor.YELLOW + "Autohop ENABLED!");
-					noHoppers.remove(name);
+					noHopperIDs.remove(id);
 				} else {
 					sender.sendMessage(ChatColor.YELLOW + "Autohop DISABLED!");
-					noHoppers.add(name);
+					noHopperIDs.add(id);
 				}
-				if (saveTask == null) {
-					saveTask = Bukkit.getScheduler().runTaskLater(this, new Runnable() {
-						@Override
-						public void run() {
-							saveConf();
-						}
-					}, 1200L);
-				}
+				scheduleSave();
 			} else {
 				sender.sendMessage(ChatColor.RED + "This command can't be used from the console.");
 			}
@@ -181,18 +177,33 @@ public class AutoHop extends JavaPlugin implements Listener {
 		}
 	}
 
+    private void scheduleSave() {
+        if (saveTask == null) {
+            saveTask = Bukkit.getScheduler().runTaskLater(this, new Runnable() {
+                @Override
+                public void run() {
+                    saveConf();
+                }
+            }, 1200L);
+        }
+    }
+
 	@EventHandler(ignoreCancelled = true)
 	public void onPlayerMove(PlayerMoveEvent event) {
 		//		long s0 = System.nanoTime();
 
-		if (!event.getPlayer().hasPermission("autohop.hop") || noHoppers.contains(event.getPlayer().getName())) {
-			return;
-		}
+        Location from = event.getFrom();
+        Location to = event.getTo();
 
-		Location from = event.getFrom();
-		Location to = event.getTo();
+        if (to.getX() == from.getX() && to.getY() == from.getY() && to.getZ() == from.getZ()) {
+            return;
+        }
 
-		// delta X and Z - which way the player is going
+        if (!event.getPlayer().hasPermission("autohop.hop") || noHopperIDs.contains(event.getPlayer().getUniqueId())) {
+            return;
+        }
+
+        // delta X and Z - which way the player is going
 		double dx = to.getX() - from.getX();
 		double dz = to.getZ() - from.getZ();
 		// extrapolation of next X and Z the player will get to
@@ -249,6 +260,15 @@ public class AutoHop extends JavaPlugin implements Listener {
 		// System.out.println("event handler: " + (System.nanoTime() - s0));
 	}
 
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        if (noHoppers.contains(event.getPlayer().getName())) {
+            noHopperIDs.add(event.getPlayer().getUniqueId());
+            noHoppers.remove(event.getPlayer().getName());
+            scheduleSave();
+        }
+    }
+
 	private double getBlockThickness(Block b) {
 		if (b.getType() == Material.SNOW && b.getData() >= 3) {
 			return b.getData() * 0.1250025;
@@ -283,10 +303,13 @@ public class AutoHop extends JavaPlugin implements Listener {
 	}
 
 	private void saveConf() {
-		List<String> l = new ArrayList<String>();
+        List<String> l = new ArrayList<String>();
 		for (String s : noHoppers) {
 			l.add(s);
-		}
+        }
+        for (UUID s : noHopperIDs) {
+            l.add(s.toString());
+        }
 		getConfig().set("nohop", l);
 		saveConfig();
 		saveTask = null;
